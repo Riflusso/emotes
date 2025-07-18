@@ -12,6 +12,8 @@ import io.github.kosmx.emotes.common.network.EmotePacket;
 import io.github.kosmx.emotes.common.network.objects.NetData;
 import io.github.kosmx.emotes.main.EmoteHolder;
 import io.github.kosmx.emotes.main.MainLoader;
+import io.github.kosmx.emotes.main.sources.EmoteSource;
+import io.github.kosmx.emotes.main.sources.PlainEmoteSource;
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
@@ -117,7 +119,7 @@ public class ClientEmotePlay extends ClientEmoteAPI {
                 CommonData.LOGGER.warn("Legacy versions was received: {}", data.versions);
                 break;
             case FILE:
-                EmoteHolder.addEmoteToList(data.emoteData, networkInstance);
+                EmoteHolder.addEmoteToList(data.emoteData, networkInstance instanceof EmoteSource source ? source : PlainEmoteSource.UNKNOWN_SOURCE);
             case UNKNOWN:
                 CommonData.LOGGER.error("Packet execution is not possible unknown purpose");
                 break;

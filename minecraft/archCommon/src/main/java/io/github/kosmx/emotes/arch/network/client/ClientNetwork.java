@@ -10,7 +10,12 @@ import io.github.kosmx.emotes.common.network.EmotePacket;
 import io.github.kosmx.emotes.common.network.EmoteStreamHelper;
 import io.github.kosmx.emotes.common.network.PacketTask;
 import io.github.kosmx.emotes.main.EmoteHolder;
+import io.github.kosmx.emotes.main.sources.EmoteSource;
+import io.github.kosmx.emotes.main.sources.PlainEmoteSource;
+import io.github.kosmx.emotes.mc.McUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -31,8 +36,10 @@ import java.util.function.Consumer;
  * - receive message (3x for 3 channels)
  * - handle configuration
  */
-public final class ClientNetwork extends AbstractNetworkInstance {
+public final class ClientNetwork extends AbstractNetworkInstance implements EmoteSource {
     public static ClientNetwork INSTANCE = new ClientNetwork();
+
+    private static final ResourceLocation SOURCE_ICON = McUtils.newIdentifier("123"); // TODO
 
     @NotNull
     private final EmoteStreamHelper streamHelper = new EmoteStreamHelper() {
@@ -170,5 +177,27 @@ public final class ClientNetwork extends AbstractNetworkInstance {
 
     public static @NotNull Packet<?> streamPacket(@NotNull ByteBuffer buf) {
         return createServerboundPacket(NetworkPlatformTools.STREAM_CHANNEL_ID, buf);
+    }
+
+    @Override
+    public ResourceLocation icon() {
+        return ClientNetwork.SOURCE_ICON;
+    }
+
+    @Override
+    public Component tooltip() {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+
+        Object serverName = PlainEmoteSource.UNKNOWN_SOURCE.tooltip();
+        if (connection != null) {
+            ServerData serverData = connection.getServerData();
+            if (serverData == null) {
+                serverName = connection.getConnection().getLoggableAddress(true);
+            } else {
+                serverName = connection.getServerData().name;
+            }
+        }
+
+        return Component.translatable("emotecraft.emotesource.server", serverName);
     }
 }

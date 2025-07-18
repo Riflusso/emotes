@@ -7,6 +7,7 @@ import io.github.kosmx.emotes.arch.gui.widgets.search.ISearchEngine;
 import io.github.kosmx.emotes.arch.gui.widgets.search.VanillaSearch;
 import io.github.kosmx.emotes.arch.screen.utils.BageUtils;
 import io.github.kosmx.emotes.main.EmoteHolder;
+import io.github.kosmx.emotes.main.sources.EmoteSource;
 import io.github.kosmx.emotes.mc.McUtils;
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.ChatFormatting;
@@ -14,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
@@ -25,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.*;
 
 public class EmoteListWidget extends ObjectSelectionList<EmoteListWidget.ListEntry> {
@@ -195,15 +198,15 @@ public class EmoteListWidget extends ObjectSelectionList<EmoteListWidget.ListEnt
             if (hovered) {
                 matrices.fill(x - 1, y - 1, maxX, y + entryHeight + 1, ARGB.color(128, 66, 66, 66));
             }
-            int maxBagesWidth = Math.max(maxX - minecraft.font.width(this.name), maxX / 3) - (x + 34);
-            int bageWidth = BageUtils.drawBadges(matrices, minecraft.font, this.bages, maxX, y + 1, maxBagesWidth, true);
-            renderScrollingString(matrices, minecraft.font, this.name, x + 34, x + 34, y + 1, maxX - bageWidth, y + 1 + minecraft.font.lineHeight, -1);
+            int maxBadgesWidth = Math.max(maxX - minecraft.font.width(this.name), maxX / 3) - (x + 34);
+            int badgeWidth = BageUtils.drawBadges(matrices, minecraft.font, this.bages, maxX, y + 1, maxBadgesWidth, true);
+            renderScrollingString(matrices, minecraft.font, this.name, x + 34, x + 34, y + 1, maxX - badgeWidth, y + 1 + minecraft.font.lineHeight, -1);
             matrices.drawString(minecraft.font, this.description, x + 34, y + 12, -8355712);
-            renderAdditional(matrices, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, tickDelta);
+            renderAdditional(matrices, index, y, x, entryWidth, entryHeight, mouseX, mouseY, hovered, tickDelta, maxX);
             matrices.disableScissor();
         }
 
-        public abstract void renderAdditional(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta);
+        public abstract void renderAdditional(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta, int maxX);
 
         @Override
         public @NotNull Component getNarration() {
@@ -230,15 +233,18 @@ public class EmoteListWidget extends ObjectSelectionList<EmoteListWidget.ListEnt
 
     public class EmoteEntry extends ListEntry {
         public final EmoteHolder emote;
+        public final Component bakedSourceTooltip;
 
         public EmoteEntry(EmoteHolder emote) {
             super(emote.name, emote.description, emote.bages);
             this.emote = emote;
+
+            this.bakedSourceTooltip = this.emote.getSource().tooltip();
         }
 
         @Override
-        public void renderAdditional(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            if(!this.emote.author.getString().isEmpty()) {
+        public void renderAdditional(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta, int maxX) {
+            if (!this.emote.author.getString().isEmpty()) {
                 Component text = Component.translatable("emotecraft.emote.author")
                         .withStyle(ChatFormatting.GOLD)
                         .append(this.emote.author);
@@ -246,8 +252,19 @@ public class EmoteListWidget extends ObjectSelectionList<EmoteListWidget.ListEnt
                 matrices.drawString(minecraft.font, text, x + 34, y + 23, -8355712);
             }
 
+            EmoteSource source = this.emote.getSource();
+
+            int textureX = maxX - 10;
+            int textureY = y + 23;
+            matrices.blit(RenderPipelines.GUI_TEXTURED, source.icon(), textureX, textureY, 0.0F, 0.0F, 8, 8, 8, 8, 8, 8);
+
+            if (mouseX >= textureX && mouseY >= textureY && mouseX < textureX + 8 && mouseY < textureY + 8) {
+                setTooltip(Tooltip.create(this.bakedSourceTooltip));
+                setTooltipDelay(Duration.ZERO);
+            }
+
             ResourceLocation texture = this.emote.getIconIdentifier();
-            if (texture != null){
+            if (texture != null) {
                 GlStateManager._enableBlend();
                 matrices.blit(RenderPipelines.GUI_TEXTURED, texture, x, y, 0.0F, 0.0F, 32, 32, 256, 256, 256, 256);
                 GlStateManager._disableBlend();
@@ -267,6 +284,7 @@ public class EmoteListWidget extends ObjectSelectionList<EmoteListWidget.ListEnt
         public boolean matches(String string) {
             return super.matches(string) ||
                     description.getString().toLowerCase().contains(string.toLowerCase()) ||
+                    (emote.fileName != null && emote.fileName.getString().toLowerCase().contains(string.toLowerCase())) ||
                     emote.author.getString().equalsIgnoreCase(string);
         }
 
@@ -308,7 +326,7 @@ public class EmoteListWidget extends ObjectSelectionList<EmoteListWidget.ListEnt
         }
 
         @Override
-        public void renderAdditional(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
+        public void renderAdditional(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick, int maxX) {
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, hovering ? FOLDER_OPEN : FOLDER, left, top, 0.0F, 0.0F, 32, 32, 32, 32);
         }
 

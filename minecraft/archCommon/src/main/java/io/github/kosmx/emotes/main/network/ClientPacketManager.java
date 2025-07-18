@@ -9,6 +9,7 @@ import io.github.kosmx.emotes.common.CommonData;
 import io.github.kosmx.emotes.common.network.EmotePacket;
 import io.github.kosmx.emotes.common.network.objects.NetData;
 import io.github.kosmx.emotes.main.EmoteHolder;
+import io.github.kosmx.emotes.main.sources.EmoteSource;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -125,6 +126,6 @@ public final class ClientPacketManager extends EmotesProxyManager {
     @Override
     public void onDisconnectFromServer(INetworkInstance networkInstance) {
         if (networkInstance == null) throw new NullPointerException("network instance must be non-null");
-        EmoteHolder.clearEmotes(networkInstance);
+        if (networkInstance instanceof EmoteSource source) EmoteHolder.clearEmotes(source);
     }
 }

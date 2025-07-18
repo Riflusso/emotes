@@ -9,10 +9,11 @@ import com.zigythebird.playeranimcore.animation.ExtraAnimationData;
 import com.zigythebird.playeranimcore.loading.UniversalAnimLoader;
 import io.github.kosmx.emotes.PlatformTools;
 import io.github.kosmx.emotes.api.proxy.AbstractNetworkInstance;
-import io.github.kosmx.emotes.api.proxy.INetworkInstance;
 import io.github.kosmx.emotes.common.CommonData;
 import io.github.kosmx.emotes.common.tools.UUIDMap;
 import io.github.kosmx.emotes.main.network.ClientEmotePlay;
+import io.github.kosmx.emotes.main.sources.EmoteSource;
+import io.github.kosmx.emotes.main.sources.FileEmoteSource;
 import io.github.kosmx.emotes.mc.McUtils;
 import io.github.kosmx.emotes.server.serializer.EmoteSerializer;
 import net.minecraft.client.Minecraft;
@@ -47,17 +48,15 @@ public class EmoteHolder implements Supplier<UUID> {
     public final Component author;
     public final List<Component> folder;
     public final List<Component> bages;
+    @Nullable
+    public final Component fileName;
 
     public AtomicInteger hash = null; // The emote's identifier hash //caching only
     public static UUIDMap<EmoteHolder> list = new UUIDMap<>(); // static array of all imported emotes
     @Nullable
     private ResourceLocation iconIdentifier = null;
 
-    /**
-     * Null if imported locally
-     */
-    @Nullable
-    private INetworkInstance fromInstance = null;
+    private EmoteSource emoteSource = null;
 
     /**
      * Create cache from emote data
@@ -71,6 +70,10 @@ public class EmoteHolder implements Supplier<UUID> {
         this.author = McUtils.fromJson(emote.data().getRaw("author"), RegistryAccess.EMPTY);
         this.folder = computeFolderPath((String) emote.data().getRaw(EmoteSerializer.FOLDER_PATH_KEY));
         this.bages = computeBages((List<String>) emote.data().getRaw("bages"));
+
+        this.fileName = emote.data().get(EmoteSerializer.FILENAME_KEY)
+                .map(McUtils::fromJson)
+                .orElse(null);
     }
 
     private static List<Component> computeFolderPath(String folderPath) {
@@ -101,9 +104,9 @@ public class EmoteHolder implements Supplier<UUID> {
         clearEmotes(null);
     }
 
-    public static void clearEmotes(INetworkInstance networkInstance) {
+    public static void clearEmotes(EmoteSource source) {
         EmoteHolder.list.removeIf(emoteHolder -> {
-            if (emoteHolder.fromInstance != networkInstance) return false;
+            if (source != null && emoteHolder.emoteSource != source) return false;
             emoteHolder.closeIcon();
             return true;
         });
@@ -175,16 +178,16 @@ public class EmoteHolder implements Supplier<UUID> {
         return null;
     }
 
-    public static void addEmoteToList(Iterable<Animation> emotes, @Nullable INetworkInstance fromInstance) {
-        for (Animation emote : emotes) addEmoteToList(emote, fromInstance);
+    public static void addEmoteToList(Iterable<Animation> emotes, @Nullable EmoteSource emoteSource) {
+        for (Animation emote : emotes) addEmoteToList(emote, emoteSource);
     }
 
-    public static EmoteHolder addEmoteToList(Animation emote, @Nullable INetworkInstance fromInstance) {
+    public static EmoteHolder addEmoteToList(Animation emote, @Nullable EmoteSource emoteSource) {
         EmoteHolder old = findIfPresent(emote);
         if (old != null) return old;
 
         EmoteHolder newEmote = new EmoteHolder(emote);
-        newEmote.fromInstance = fromInstance;
+        newEmote.emoteSource = Objects.requireNonNullElseGet(emoteSource, () -> new FileEmoteSource(newEmote));
         list.add(newEmote);
         return newEmote;
     }
@@ -276,5 +279,9 @@ public class EmoteHolder implements Supplier<UUID> {
             ), 0, Animation.LoopType.PLAY_ONCE, Collections.emptyMap(), UniversalAnimLoader.NO_KEYFRAMES, new HashMap<>(), new HashMap<>()));
             emote.data().put(ExtraAnimationData.UUID_KEY, uuid);
         }
+    }
+
+    public EmoteSource getSource() {
+        return this.emoteSource;
     }
 }
