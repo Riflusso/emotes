@@ -5,8 +5,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 public record PlainEmoteSource(ResourceLocation icon, Component tooltip) implements EmoteSource {
-    public static final PlainEmoteSource UNKNOWN_SOURCE = new PlainEmoteSource(
+    public static final PlainEmoteSource UNKNOWN = new PlainEmoteSource(
             McUtils.newIdentifier("123"), // TODO
             Component.translatable("emotecraft.emotesource.unknown")
+    );
+    public static final PlainEmoteSource UNKNOWN_SERVER = new PlainEmoteSource(
+            McUtils.newIdentifier("123"), // TODO
+            Component.translatable("emotecraft.emotesource.server", Component.translatable("emotecraft.emotesource.unknown"))
     );
 }

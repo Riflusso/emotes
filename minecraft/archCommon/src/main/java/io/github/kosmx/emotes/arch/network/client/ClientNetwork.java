@@ -188,7 +188,7 @@ public final class ClientNetwork extends AbstractNetworkInstance implements Emot
     public Component tooltip() {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
 
-        Object serverName = PlainEmoteSource.UNKNOWN_SOURCE.tooltip();
+        Object serverName = PlainEmoteSource.UNKNOWN.tooltip();
         if (connection != null) {
             ServerData serverData = connection.getServerData();
             if (serverData == null) {

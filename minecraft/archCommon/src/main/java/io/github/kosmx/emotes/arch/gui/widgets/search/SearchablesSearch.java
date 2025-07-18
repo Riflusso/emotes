@@ -42,11 +42,6 @@ public class SearchablesSearch implements ISearchEngine {
                             .map(Component::getString)
                             .filter(str -> !str.isEmpty()) : Optional.empty()
             ))
-            .component(SearchableComponent.create("source",
-                    entry -> entry instanceof EmoteListWidget.EmoteEntry holder ? Optional.ofNullable(holder.bakedSourceTooltip)
-                            .map(Component::getString)
-                            .filter(str -> !str.isEmpty()) : Optional.empty()
-            ))
             .component(SearchableComponent.create(EmoteSerializer.FILENAME_KEY,
                     entry -> entry instanceof EmoteListWidget.EmoteEntry holder ? Optional.ofNullable(holder.emote.fileName)
                             .map(Component::getString)

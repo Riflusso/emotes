@@ -14,6 +14,7 @@ import io.github.kosmx.emotes.common.tools.UUIDMap;
 import io.github.kosmx.emotes.main.network.ClientEmotePlay;
 import io.github.kosmx.emotes.main.sources.EmoteSource;
 import io.github.kosmx.emotes.main.sources.FileEmoteSource;
+import io.github.kosmx.emotes.main.sources.PlainEmoteSource;
 import io.github.kosmx.emotes.mc.McUtils;
 import io.github.kosmx.emotes.server.serializer.EmoteSerializer;
 import net.minecraft.client.Minecraft;
@@ -56,7 +57,8 @@ public class EmoteHolder implements Supplier<UUID> {
     @Nullable
     private ResourceLocation iconIdentifier = null;
 
-    private EmoteSource emoteSource = null;
+    @NotNull
+    private EmoteSource emoteSource = PlainEmoteSource.UNKNOWN;
 
     /**
      * Create cache from emote data
@@ -104,9 +106,9 @@ public class EmoteHolder implements Supplier<UUID> {
         clearEmotes(null);
     }
 
-    public static void clearEmotes(EmoteSource source) {
+    public static void clearEmotes(@Nullable EmoteSource source) {
         EmoteHolder.list.removeIf(emoteHolder -> {
-            if (source != null && emoteHolder.emoteSource != source) return false;
+            if (emoteHolder.emoteSource != Objects.requireNonNullElse(source, PlainEmoteSource.UNKNOWN_SERVER)) return false;
             emoteHolder.closeIcon();
             return true;
         });
@@ -281,6 +283,7 @@ public class EmoteHolder implements Supplier<UUID> {
         }
     }
 
+    @NotNull
     public EmoteSource getSource() {
         return this.emoteSource;
     }

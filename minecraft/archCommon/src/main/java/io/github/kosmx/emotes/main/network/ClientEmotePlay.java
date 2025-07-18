@@ -119,7 +119,7 @@ public class ClientEmotePlay extends ClientEmoteAPI {
                 CommonData.LOGGER.warn("Legacy versions was received: {}", data.versions);
                 break;
             case FILE:
-                EmoteHolder.addEmoteToList(data.emoteData, networkInstance instanceof EmoteSource source ? source : PlainEmoteSource.UNKNOWN_SOURCE);
+                EmoteHolder.addEmoteToList(data.emoteData, networkInstance instanceof EmoteSource source ? source : PlainEmoteSource.UNKNOWN_SERVER);
             case UNKNOWN:
                 CommonData.LOGGER.error("Packet execution is not possible unknown purpose");
                 break;
